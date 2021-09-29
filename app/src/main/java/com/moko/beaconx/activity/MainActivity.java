@@ -341,7 +341,6 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
             }
 
             // Send POST request to flask server
-            //final String ipAddress = "96e2-42-60-246-178.ngrok.io";
             try {
                 // Set up URL
                 URL postURL = new URL("http://" +  ipAddress + "/updateInfo");
