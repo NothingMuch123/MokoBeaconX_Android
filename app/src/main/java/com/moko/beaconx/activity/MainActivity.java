@@ -356,6 +356,7 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
                 jsonData.put("staff", ((EditText)findViewById(R.id.staffID)).getText().toString());
                 jsonData.put("mac", closest.mac);
                 jsonData.put("rssi", String.valueOf(closest.rssi));
+                jsonData.put("time", String.valueOf(System.currentTimeMillis() / 1000));
 
                 // Write into output stream
                 OutputStream os = con.getOutputStream();
