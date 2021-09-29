@@ -109,4 +109,16 @@
         android:paddingRight="10dp"
         tools:listitem="@layout/list_item_device" />
 
+    <EditText
+        android:id="@+id/staffID"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Staff ID" />
+
+    <EditText
+        android:id="@+id/flaskIPAddress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Flask server IP address" />
+
 </LinearLayout>
