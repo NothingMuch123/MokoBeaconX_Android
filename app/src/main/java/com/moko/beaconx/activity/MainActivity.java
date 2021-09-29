@@ -9,9 +9,11 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Message;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -44,7 +46,14 @@ import com.moko.support.utils.MokoUtils;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
+import org.json.JSONObject;
 
+import java.io.DataOutputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -313,6 +322,55 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
                 return 0;
             }
         });
+
+        // Send the closest beacon info
+        String ipAddress = ((EditText)findViewById(R.id.flaskIPAddress)).getText().toString();
+        if (ipAddress != null && !ipAddress.isEmpty() && beaconXInfos.size() > 0) {
+            // Find closest beacon
+            BeaconXInfo closest = null;
+            for (BeaconXInfo b : beaconXInfos) {
+                if (closest == null) {
+                    closest = b;
+                    continue;
+                }
+
+                // Check rssi
+                if (b.rssi > closest.rssi) {
+                    closest = b;
+                }
+            }
+
+            // Send POST request to flask server
+            //final String ipAddress = "96e2-42-60-246-178.ngrok.io";
+            try {
+                // Set up URL
+                URL postURL = new URL("http://" +  ipAddress + "/updateInfo");
+                HttpURLConnection con = (HttpURLConnection)postURL.openConnection();
+
+                // Set up headers
+                con.setRequestMethod("POST");
+                con.setDoOutput(true);
+                con.setRequestProperty("Content-Type", "application/json");
+
+                // Generate json data
+                JSONObject jsonData = new JSONObject();
+                jsonData.put("staff", ((EditText)findViewById(R.id.staffID)).getText().toString());
+                jsonData.put("mac", closest.mac);
+                jsonData.put("rssi", String.valueOf(closest.rssi));
+
+                // Write into output stream
+                OutputStream os = con.getOutputStream();
+                byte[] input = jsonData.toString().getBytes("utf-8");
+                os.write(input, 0, input.length);
+
+                // Connect
+                con.connect();
+                Log.i("Response Code", String.valueOf(con.getResponseCode()));
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
 
