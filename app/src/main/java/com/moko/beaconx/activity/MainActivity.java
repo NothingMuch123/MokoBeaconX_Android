@@ -343,7 +343,8 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
             // Send POST request to flask server
             try {
                 // Set up URL
-                URL postURL = new URL("http://" +  ipAddress + "/updateInfo");
+                //URL postURL = new URL("http://" +  ipAddress + "/updateInfo");
+                URL postURL = new URL(ipAddress);
                 HttpURLConnection con = (HttpURLConnection)postURL.openConnection();
 
                 // Set up headers
@@ -364,8 +365,9 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
                 os.write(input, 0, input.length);
 
                 // Connect
+                long startTime = System.currentTimeMillis();
                 con.connect();
-                Log.i("Response Code", String.valueOf(con.getResponseCode()));
+                Log.i("Response Code", "Flask Response: " + String.valueOf(con.getResponseCode()) + " - Took " + String.valueOf(System.currentTimeMillis() - startTime) + "ms");
             }
             catch (Exception e) {
                 e.printStackTrace();
