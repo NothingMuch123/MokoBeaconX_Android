@@ -48,12 +48,9 @@ import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 import org.json.JSONObject;
 
-import java.io.DataOutputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -89,6 +86,14 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
     private HashMap<String, BeaconXInfo> beaconXInfoHashMap;
     private ArrayList<BeaconXInfo> beaconXInfos;
     private BeaconXListAdapter adapter;
+
+    private long updateDeviceDuration = 1000;
+    private boolean sendWithUIUpdate = true;
+
+    // Last update values
+    private String lastUpdatedMac = "";
+    private long lastUpdatedTime = 0;
+    private long timeTillMustSend = 5000; // 5 seconds
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -254,7 +259,7 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
                     tvDeviceNum.setText(String.format("DEVICE(%d)", beaconXInfos.size()));
                 });
                 try {
-                    Thread.sleep(500);
+                    Thread.sleep(updateDeviceDuration);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -273,11 +278,12 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
         }
         beaconXInfoHashMap.put(beaconXInfo.mac, beaconXInfo);
 
-        /*String ipAddress = ((EditText)findViewById(R.id.flaskIPAddress)).getText().toString();
-        if (ipAddress != null && !ipAddress.isEmpty() && deviceInfo != null) {
+        // Send to flask once new data received
+        String ipAddress = ((EditText)findViewById(R.id.flaskIPAddress)).getText().toString();
+        if (!sendWithUIUpdate && ipAddress != null && !ipAddress.isEmpty() && deviceInfo != null) {
             // Send POST request to flask server
             SendBeaconDataToFlask(beaconXInfo, ipAddress);
-        }*/
+        }
     }
 
     @Override
@@ -331,7 +337,7 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
 
         // Send the closest beacon info
         String ipAddress = ((EditText)findViewById(R.id.flaskIPAddress)).getText().toString();
-        if (ipAddress != null && !ipAddress.isEmpty() && beaconXInfos.size() > 0) {
+        if (sendWithUIUpdate && ipAddress != null && !ipAddress.isEmpty() && beaconXInfos.size() > 0) {
             // Find closest beacon
             BeaconXInfo closest = null;
             for (BeaconXInfo b : beaconXInfos) {
@@ -544,36 +550,47 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
     }
 
     private void SendBeaconDataToFlask(BeaconXInfo b, String ipAddress) {
-        try {
-            // Set up URL
-            //URL postURL = new URL("http://" +  ipAddress + "/updateInfo");
-            URL postURL = new URL(ipAddress);
-            HttpURLConnection con = (HttpURLConnection)postURL.openConnection();
+        if (lastUpdatedMac.isEmpty() || !lastUpdatedMac.equals(b.mac) || System.currentTimeMillis() - lastUpdatedTime >= timeTillMustSend) {
+            Thread t = new Thread(() -> {
+                try {
+                    // Set up URL
+                    //URL postURL = new URL("http://" +  ipAddress + "/updateInfo");
+                    URL postURL = new URL(ipAddress);
+                    HttpURLConnection con = (HttpURLConnection) postURL.openConnection();
 
-            // Set up headers
-            con.setRequestMethod("POST");
-            con.setDoOutput(true);
-            con.setRequestProperty("Content-Type", "application/json");
+                    // Set up headers
+                    con.setRequestMethod("POST");
+                    con.setDoOutput(true);
+                    con.setRequestProperty("Content-Type", "application/json");
 
-            // Generate json data
-            JSONObject jsonData = new JSONObject();
-            jsonData.put("staff", ((EditText)findViewById(R.id.staffID)).getText().toString());
-            jsonData.put("mac", b.mac);
-            jsonData.put("rssi", String.valueOf(b.rssi));
-            //jsonData.put("time", String.valueOf(System.currentTimeMillis() * 0.001));
+                    // Generate json data
+                    JSONObject jsonData = new JSONObject();
+                    jsonData.put("staff", ((EditText) findViewById(R.id.staffID)).getText().toString());
+                    jsonData.put("mac", b.mac);
+                    jsonData.put("rssi", String.valueOf(b.rssi));
+                    //jsonData.put("time", String.valueOf(System.currentTimeMillis() * 0.001));
 
-            // Write into output stream
-            OutputStream os = con.getOutputStream();
-            byte[] input = jsonData.toString().getBytes("utf-8");
-            os.write(input, 0, input.length);
+                    // Write into output stream
+                    OutputStream os = con.getOutputStream();
+                    byte[] input = jsonData.toString().getBytes("utf-8");
+                    os.write(input, 0, input.length);
 
-            // Connect
-            long startTime = System.currentTimeMillis();
-            con.connect();
-            Log.i("ResponseCode", "Flask Response: " + String.valueOf(con.getResponseCode()) + " - Took " + String.valueOf(System.currentTimeMillis() - startTime) + "ms");
-        }
-        catch (Exception e) {
-            e.printStackTrace();
+                    // Connect
+                    long startTime = System.currentTimeMillis();
+                    con.connect();
+                    int responseCode = con.getResponseCode();
+
+                    // Record last update
+                    lastUpdatedMac = b.mac;
+                    lastUpdatedTime = System.currentTimeMillis();
+
+                    // Log Info
+                    Log.i("ResponseCode", "Flask Response: " + String.valueOf(responseCode) + " - Took " + String.valueOf(lastUpdatedTime - startTime) + "ms");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+            t.start();
         }
     }
 
