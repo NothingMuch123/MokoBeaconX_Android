@@ -180,7 +180,7 @@ public class MokoSupport implements MokoResponseCallback {
         }
         final BluetoothLeScannerCompat scanner = BluetoothLeScannerCompat.getScanner();
         ScanSettings settings = new ScanSettings.Builder()
-                .setScanMode(ScanSettings.SCAN_MODE_BALANCED)
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
                 .build();
         List<ScanFilter> scanFilterList = Collections.singletonList(new ScanFilter.Builder().build());
         mMokoLeScanHandler = new MokoLeScanHandler(mokoScanDeviceCallback);
