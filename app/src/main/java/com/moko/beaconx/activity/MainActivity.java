@@ -272,6 +272,12 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
             return;
         }
         beaconXInfoHashMap.put(beaconXInfo.mac, beaconXInfo);
+
+        /*String ipAddress = ((EditText)findViewById(R.id.flaskIPAddress)).getText().toString();
+        if (ipAddress != null && !ipAddress.isEmpty() && deviceInfo != null) {
+            // Send POST request to flask server
+            SendBeaconDataToFlask(beaconXInfo, ipAddress);
+        }*/
     }
 
     @Override
@@ -341,37 +347,7 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
             }
 
             // Send POST request to flask server
-            try {
-                // Set up URL
-                //URL postURL = new URL("http://" +  ipAddress + "/updateInfo");
-                URL postURL = new URL(ipAddress);
-                HttpURLConnection con = (HttpURLConnection)postURL.openConnection();
-
-                // Set up headers
-                con.setRequestMethod("POST");
-                con.setDoOutput(true);
-                con.setRequestProperty("Content-Type", "application/json");
-
-                // Generate json data
-                JSONObject jsonData = new JSONObject();
-                jsonData.put("staff", ((EditText)findViewById(R.id.staffID)).getText().toString());
-                jsonData.put("mac", closest.mac);
-                jsonData.put("rssi", String.valueOf(closest.rssi));
-                jsonData.put("time", String.valueOf(System.currentTimeMillis() / 1000));
-
-                // Write into output stream
-                OutputStream os = con.getOutputStream();
-                byte[] input = jsonData.toString().getBytes("utf-8");
-                os.write(input, 0, input.length);
-
-                // Connect
-                long startTime = System.currentTimeMillis();
-                con.connect();
-                Log.i("Response Code", "Flask Response: " + String.valueOf(con.getResponseCode()) + " - Took " + String.valueOf(System.currentTimeMillis() - startTime) + "ms");
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-            }
+            SendBeaconDataToFlask(closest, ipAddress);
         }
     }
 
@@ -500,12 +476,12 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
         findViewById(R.id.iv_refresh).startAnimation(animation);
         beaconXInfoParseable = new BeaconXInfoParseableImpl();
         MokoSupport.getInstance().startScanDevice(this);
-        mHandler.postDelayed(new Runnable() {
+        /*mHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
                 MokoSupport.getInstance().stopScanDevice();
             }
-        }, 1000 * 60);
+        }, 1000 * 60);*/
     }
 
     private String mPassword;
@@ -564,6 +540,40 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
                     });
                 }
             }, 200);
+        }
+    }
+
+    private void SendBeaconDataToFlask(BeaconXInfo b, String ipAddress) {
+        try {
+            // Set up URL
+            //URL postURL = new URL("http://" +  ipAddress + "/updateInfo");
+            URL postURL = new URL(ipAddress);
+            HttpURLConnection con = (HttpURLConnection)postURL.openConnection();
+
+            // Set up headers
+            con.setRequestMethod("POST");
+            con.setDoOutput(true);
+            con.setRequestProperty("Content-Type", "application/json");
+
+            // Generate json data
+            JSONObject jsonData = new JSONObject();
+            jsonData.put("staff", ((EditText)findViewById(R.id.staffID)).getText().toString());
+            jsonData.put("mac", b.mac);
+            jsonData.put("rssi", String.valueOf(b.rssi));
+            //jsonData.put("time", String.valueOf(System.currentTimeMillis() * 0.001));
+
+            // Write into output stream
+            OutputStream os = con.getOutputStream();
+            byte[] input = jsonData.toString().getBytes("utf-8");
+            os.write(input, 0, input.length);
+
+            // Connect
+            long startTime = System.currentTimeMillis();
+            con.connect();
+            Log.i("ResponseCode", "Flask Response: " + String.valueOf(con.getResponseCode()) + " - Took " + String.valueOf(System.currentTimeMillis() - startTime) + "ms");
+        }
+        catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
