@@ -7,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Message;
 import android.text.TextUtils;
 import android.util.Log;
@@ -48,12 +49,18 @@ import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 import org.json.JSONObject;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Timer;
@@ -95,6 +102,9 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
     private long lastUpdatedTime = 0;
     private long timeTillMustSend = 4500; // 4.5 seconds + 0.5 second UI Thread delay
 
+    // File IO Logging
+    private String logFileName = "";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -119,6 +129,9 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
         if (animation == null) {
             startScan();
         }
+
+        // Assign log file name
+        logFileName = String.valueOf(System.currentTimeMillis());
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -585,6 +598,16 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
                     lastUpdatedTime = System.currentTimeMillis();
 
                     // Log Info
+                    long responseTime = lastUpdatedTime - startTime;
+                    File f = new File(getExternalFilesDir(null), "logs.txt");
+                    if (!f.exists()) {
+                        f.createNewFile();
+                    }
+                    BufferedWriter fbw = new BufferedWriter(new FileWriter(f, true));
+                    fbw.append(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(Calendar.getInstance().getTime()) + " ResponseCode" + "Flask Response: " + String.valueOf(responseCode) + " - Took " + String.valueOf(lastUpdatedTime - startTime) + "ms");
+                    fbw.newLine();
+                    fbw.flush();
+                    fbw.close();
                     Log.i("ResponseCode", "Flask Response: " + String.valueOf(responseCode) + " - Took " + String.valueOf(lastUpdatedTime - startTime) + "ms");
                 } catch (Exception e) {
                     e.printStackTrace();
