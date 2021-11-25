@@ -94,13 +94,13 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
     private ArrayList<BeaconXInfo> beaconXInfos;
     private BeaconXListAdapter adapter;
 
-    private long updateDeviceDuration = 500;
+    private long updateDeviceDuration = 1000;
     private boolean sendWithUIUpdate = true;
 
     // Last update values
     private String lastUpdatedMac = "";
     private long lastUpdatedTime = 0;
-    private long timeTillMustSend = 4500; // 4.5 seconds + 0.5 second UI Thread delay
+    private long timeTillMustSend = 4000; // 4 seconds + 1 second UI Thread delay
 
     // File IO Logging
     private String logFileName = "";
