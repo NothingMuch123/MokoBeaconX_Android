@@ -105,7 +105,7 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
     // File IO Logging
     private String logFileName = "";
 
-    private String macToIgnore = "C4:28:26:8C:44:7F";
+    private String macToIgnore = "";//""C4:28:26:8C:44:7F";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
