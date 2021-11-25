@@ -105,6 +105,8 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
     // File IO Logging
     private String logFileName = "";
 
+    private String macToIgnore = "C4:28:26:8C:44:7F";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -286,7 +288,7 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
     @Override
     public void onScanDevice(DeviceInfo deviceInfo) {
         final BeaconXInfo beaconXInfo = beaconXInfoParseable.parseDeviceInfo(deviceInfo);
-        if (beaconXInfo == null) {
+        if (beaconXInfo == null || beaconXInfo.mac.equals(macToIgnore)) {
             return;
         }
         beaconXInfoHashMap.put(beaconXInfo.mac, beaconXInfo);
