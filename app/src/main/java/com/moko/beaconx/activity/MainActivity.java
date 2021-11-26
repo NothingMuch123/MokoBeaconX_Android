@@ -565,7 +565,9 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
     }
 
     private void SendBeaconDataToFlask(BeaconXInfo b, String ipAddress) {
-        if (lastUpdatedMac.isEmpty() || !lastUpdatedMac.equals(b.mac) || System.currentTimeMillis() - lastUpdatedTime >= timeTillMustSend) {
+        if (lastUpdatedMac.isEmpty()
+                || !lastUpdatedMac.equals(b.mac)
+                || System.currentTimeMillis() - lastUpdatedTime >= timeTillMustSend) {
             Thread t = new Thread(() -> {
                 try {
                     // Set up URL
@@ -578,7 +580,9 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
 
                     // Generate json data
                     JSONObject jsonData = new JSONObject();
-                    jsonData.put("staff", ((EditText) findViewById(R.id.staffID)).getText().toString()).put("mac", b.mac).put("rssi", String.valueOf(b.rssi));
+                    jsonData.put("staff", ((EditText) findViewById(R.id.staffID)).getText().toString())
+                            .put("mac", b.mac)
+                            .put("rssi", String.valueOf(b.rssi));
 
                     // Write into output stream
                     OutputStream os = con.getOutputStream();
