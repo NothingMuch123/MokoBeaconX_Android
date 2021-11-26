@@ -569,9 +569,7 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
             Thread t = new Thread(() -> {
                 try {
                     // Set up URL
-                    //URL postURL = new URL("http://" +  ipAddress + "/updateInfo");
-                    URL postURL = new URL(ipAddress);
-                    HttpURLConnection con = (HttpURLConnection) postURL.openConnection();
+                    HttpURLConnection con = (HttpURLConnection) new URL(ipAddress).openConnection();
 
                     // Set up headers
                     con.setRequestMethod("POST");
@@ -580,10 +578,7 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
 
                     // Generate json data
                     JSONObject jsonData = new JSONObject();
-                    jsonData.put("staff", ((EditText) findViewById(R.id.staffID)).getText().toString());
-                    jsonData.put("mac", b.mac);
-                    jsonData.put("rssi", String.valueOf(b.rssi));
-                    //jsonData.put("time", String.valueOf(System.currentTimeMillis() * 0.001));
+                    jsonData.put("staff", ((EditText) findViewById(R.id.staffID)).getText().toString()).put("mac", b.mac).put("rssi", String.valueOf(b.rssi));
 
                     // Write into output stream
                     OutputStream os = con.getOutputStream();
@@ -599,23 +594,33 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
                     lastUpdatedMac = b.mac;
                     lastUpdatedTime = System.currentTimeMillis();
 
-                    // Log Info
-                    long responseTime = lastUpdatedTime - startTime;
-                    File f = new File(getExternalFilesDir(null), "logs.txt");
-                    if (!f.exists()) {
-                        f.createNewFile();
-                    }
-                    BufferedWriter fbw = new BufferedWriter(new FileWriter(f, true));
-                    fbw.append(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(Calendar.getInstance().getTime()) + " ResponseCode" + "Flask Response: " + String.valueOf(responseCode) + " - Took " + String.valueOf(lastUpdatedTime - startTime) + "ms");
-                    fbw.newLine();
-                    fbw.flush();
-                    fbw.close();
-                    Log.i("ResponseCode", "Flask Response: " + String.valueOf(responseCode) + " - Took " + String.valueOf(lastUpdatedTime - startTime) + "ms");
+                    // Log info
+                    LogSending(responseCode, startTime);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             });
             t.start();
+        }
+    }
+
+    private void LogSending(int responseCode, long startTime) {
+        try {
+            // Log Info
+            long responseTime = lastUpdatedTime - startTime;
+            File f = new File(getExternalFilesDir(null), "logs.txt");
+            if (!f.exists()) {
+                f.createNewFile();
+            }
+            BufferedWriter fbw = new BufferedWriter(new FileWriter(f, true));
+            fbw.append(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(Calendar.getInstance().getTime()) + " ResponseCode" + "Flask Response: " + String.valueOf(responseCode) + " - Took " + String.valueOf(lastUpdatedTime - startTime) + "ms");
+            fbw.newLine();
+            fbw.flush();
+            fbw.close();
+            Log.i("ResponseCode", "Flask Response: " + String.valueOf(responseCode) + " - Took " + String.valueOf(lastUpdatedTime - startTime) + "ms");
+        }
+        catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
