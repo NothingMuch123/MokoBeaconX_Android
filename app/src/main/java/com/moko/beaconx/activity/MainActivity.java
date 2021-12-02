@@ -7,7 +7,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Message;
 import android.text.TextUtils;
 import android.util.Log;
@@ -18,6 +17,11 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+
+import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.moko.beaconx.AppConstants;
@@ -53,23 +57,21 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.OutputStream;
+import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import androidx.core.content.ContextCompat;
-import androidx.recyclerview.widget.DividerItemDecoration;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
@@ -105,7 +107,13 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
     // File IO Logging
     private String logFileName = "";
 
-    private String macToIgnore = "";//""C4:28:26:8C:44:7F";
+    private String macToIgnore = "";//"C4:28:26:8C:44:7F";
+
+    // Simulate beacon
+    private boolean simulateBeacon = true;
+    private String macToSimulate = "C4:28:26:8C:44:7F";
+    private Thread simulateBeaconThread = null;
+    private Random random = new Random();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -134,6 +142,36 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
 
         // Assign log file name
         logFileName = String.valueOf(System.currentTimeMillis());
+
+        // Simulate beacon for users without beacon access
+        if (simulateBeacon) {
+            simulateBeaconThread = new Thread(() -> {
+                while (true) {
+                    try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    BeaconXInfo b = new BeaconXInfo();
+                    b.name = "MokoBeaconX";
+                    b.mac = macToSimulate;
+                    b.rssi = -(random.nextInt(3) + 85);
+                    b.validDataHashMap = new HashMap<>();
+
+                    // Valid Data
+                    BeaconXInfo.ValidData vd1 = new BeaconXInfo.ValidData();
+                    vd1.type = 2;
+                    vd1.data = "20000b891e4001011c7703582e23";
+                    b.validDataHashMap.put("20", vd1);
+                    BeaconXInfo.ValidData vd2 = new BeaconXInfo.ValidData();
+                    vd2.type = 1;
+                    vd2.data = "1000016d6f6b6f736d61727400";
+                    b.validDataHashMap.put("1000016d6f6b6f736d61727400", vd2);
+                    beaconXInfoHashMap.put(macToSimulate, b);
+                }
+            });
+            simulateBeaconThread.start();
+        }
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -261,6 +299,12 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
         super.onDestroy();
         unregisterReceiver(mReceiver);
         EventBus.getDefault().unregister(this);
+
+        // Destroy simulate beacon thread
+        if (simulateBeaconThread != null) {
+            simulateBeaconThread.interrupt();
+            simulateBeaconThread = null;
+        }
     }
 
 
@@ -291,14 +335,14 @@ public class MainActivity extends BaseActivity implements MokoScanDeviceCallback
         if (beaconXInfo == null || beaconXInfo.mac.equals(macToIgnore)) {
             return;
         }
-        beaconXInfoHashMap.put(beaconXInfo.mac, beaconXInfo);
+        /*beaconXInfoHashMap.put(beaconXInfo.mac, beaconXInfo);
 
         // Send to flask once new data received
         String ipAddress = ((EditText)findViewById(R.id.flaskIPAddress)).getText().toString();
         if (!sendWithUIUpdate && ipAddress != null && !ipAddress.isEmpty() && deviceInfo != null) {
             // Send POST request to flask server
             SendBeaconDataToFlask(beaconXInfo, ipAddress);
-        }
+        }*/
     }
 
     @Override
